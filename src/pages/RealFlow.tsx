@@ -9,11 +9,10 @@ import {
 } from "@stellar/design-system";
 import * as RealFlow from "../../packages/realflow";
 import { useWallet } from "../hooks/useWallet";
+import { networkPassphrase, rpcUrl } from "../contracts/util";
 
 // Contract ID and Network (Testnet)
-const CONTRACT_ID = "CDTZUJLJLATUXXZVFTMLBWT7U26KGG6TAPKN2Q3V6O476CKXSI27523";
-const NETWORK_PASSPHRASE = "Test SDF Network ; September 2015";
-const RPC_URL = "https://soroban-testnet.stellar.org";
+const CONTRACT_ID = "CDTZ6UJLJLATUXXZVFTMLBWT7U26KGG6TAPKN2Q3V6O476CKXSI27523";
 const TREASURY_ADDRESS =
   "GAYAZERYFJDPIHQYS25BVN6XLUTZ6POUJKYGLB33ER25VFXLJZGYQFQ3";
 
@@ -40,9 +39,9 @@ const RealFlowPage: React.FC = () => {
   const client = React.useMemo(
     () =>
       new RealFlow.Client({
-        networkPassphrase: NETWORK_PASSPHRASE,
+        networkPassphrase: networkPassphrase,
         contractId: CONTRACT_ID,
-        rpcUrl: RPC_URL,
+        rpcUrl: rpcUrl,
         allowHttp: true,
         publicKey: address,
       }),
@@ -228,6 +227,40 @@ const RealFlowPage: React.FC = () => {
     }
   };
 
+  const handleInitialize = async () => {
+    if (!address) return setError("Please connect wallet");
+    setLoading(true);
+    setError(null);
+    try {
+      const tx = await client.initialize({
+        treasury: TREASURY_ADDRESS,
+        distribution_pool: address,
+      });
+
+      await tx.signAndSend({
+        signTransaction: async (x) => {
+          const signed = await signTransaction(x);
+          return signed;
+        },
+      });
+
+      await fetchData();
+      // Reset local state as contract resets them
+      setTotalProduction(0n);
+      setTotalSupply(0n);
+      setTreasuryBalance(0n);
+    } catch (err: unknown) {
+      console.error(err);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Transaction failed");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Layout.Content>
       <Layout.Inset>
@@ -240,6 +273,52 @@ const RealFlowPage: React.FC = () => {
             {error}
           </Notification>
         )}
+
+        <div style={{ marginBottom: "20px" }}>
+          <Card>
+            <div
+              style={{
+                padding: "20px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              <div>
+                <Text as="h3" size="lg">
+                  System Setup
+                </Text>
+                <Text
+                  as="div"
+                  size="xs"
+                  style={{
+                    display: "block",
+                    margin: "5px 0",
+                    wordBreak: "break-all",
+                    fontFamily: "monospace",
+                  }}
+                >
+                  {CONTRACT_ID}
+                </Text>
+                <Text as="p" size="sm">
+                  Initialize the contract if you see "UnreachableCodeReached"
+                  error. (Resets data)
+                </Text>
+              </div>
+              <Button
+                size="md"
+                variant="secondary"
+                onClick={() => {
+                  void handleInitialize();
+                }}
+                disabled={loading || !address}
+                isLoading={loading}
+              >
+                Initialize Contract
+              </Button>
+            </div>
+          </Card>
+        </div>
 
         <div
           style={{

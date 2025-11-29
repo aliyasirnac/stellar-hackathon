@@ -30,6 +30,13 @@ if (typeof window !== "undefined") {
   window.Buffer = window.Buffer || Buffer;
 }
 
+export const networks = {
+  standalone: {
+    networkPassphrase: "Standalone Network ; February 2017",
+    contractId: "CCQA4F4MLGXI5CCFYL2AM67U5XBBHFBJUUBACWOYMH23TUDJHVCL6IBW",
+  },
+} as const;
+
 export interface Client {
   /**
    * Construct and simulate a initialize transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.

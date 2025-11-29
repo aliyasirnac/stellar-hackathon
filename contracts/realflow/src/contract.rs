@@ -64,12 +64,11 @@ impl RealFlowContract {
     pub fn register_production(
         env: Env,
         product_type: Symbol,
-        quantity: i128,
-        price_per_unit: i128,
+        token_quantity: i128,
         expiration_ledger: u32,
     ) {
-        // Ekonomik Değeri Hesapla (10 Ton * 100 Birim Fiyat = 1000 Birim Değer)
-        let production_value = quantity * price_per_unit;
+        // Ekonomik Değeri Hesapla (10 Ton * 100 Birim Fiyat = token_quantity * 25) çay fiyatı=25
+        let production_value = token_quantity * 25;
 
         let current_prod: i128 = env
             .storage()
