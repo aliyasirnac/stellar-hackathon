@@ -27,7 +27,6 @@ const RealFlowPage: React.FC = () => {
   // Forms State
   const [prodType, setProdType] = useState("");
   const [prodQuantity, setProdQuantity] = useState("");
-  const [prodPrice, setProdPrice] = useState("");
   const [prodExpiration, setProdExpiration] = useState("");
 
   const [transferTo, setTransferTo] = useState("");
@@ -86,8 +85,7 @@ const RealFlowPage: React.FC = () => {
       const tx = await client.register_production(
         {
           product_type: prodType,
-          quantity: BigInt(prodQuantity),
-          price_per_unit: BigInt(prodPrice),
+          token_quantity: BigInt(prodQuantity),
           expiration_ledger: Number(prodExpiration),
         },
         {
@@ -105,7 +103,6 @@ const RealFlowPage: React.FC = () => {
       await fetchData();
       setProdType("");
       setProdQuantity("");
-      setProdPrice("");
       setProdExpiration("");
     } catch (err: unknown) {
       console.error(err);
@@ -391,14 +388,6 @@ const RealFlowPage: React.FC = () => {
                   type="number"
                   value={prodQuantity}
                   onChange={(e) => setProdQuantity(e.target.value)}
-                />
-                <Input
-                  fieldSize="md"
-                  id="prod-price"
-                  label="Price per Unit"
-                  type="number"
-                  value={prodPrice}
-                  onChange={(e) => setProdPrice(e.target.value)}
                 />
                 <Input
                   fieldSize="md"
