@@ -36,8 +36,7 @@ fn test_realflow_economy_cycle() {
     // Toplam Değer: 10 * 100 = 1000 Token
     // MEM GÜNCELLEME: Uzun ömürlü ürün (expiration çok ileri)
     let urun_tipi = Symbol::new(&env, "MISIR");
-    let expiration = env.ledger().sequence() + 100_000; // Uzun ömürlü
-    client.register_production(&urun_tipi, &10, &100, &expiration);
+    client.register_production(&urun_tipi, &40, &100);
 
     // Kontrol: Üretim değeri arttı mı?
     assert_eq!(client.get_total_production(), 1000);
@@ -114,12 +113,10 @@ fn test_hot_token_logic() {
     // Senaryo: Çabuk bozulan domates (Hot Token)
     // Expiration: Current Ledger + 1000 (Threshold 17280'den küçük)
     let urun_tipi = Symbol::new(&env, "DOMATES");
-    let current_ledger = env.ledger().sequence();
-    let expiration = current_ledger + 1000;
 
     // Bu çağrı HotTokenMintedEvent fırlatmalı.
     // Soroban testlerinde eventleri yakalamak için env.events().all() kullanılır.
-    client.register_production(&urun_tipi, &10, &50, &expiration);
+    client.register_production(&urun_tipi, &10, &50);
 
     // Event kontrolü
     let events = env.events().all();
