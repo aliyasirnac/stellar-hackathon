@@ -9,6 +9,12 @@ import type { u32, i128 } from "@stellar/stellar-sdk/contract";
 export * from "@stellar/stellar-sdk";
 export * as contract from "@stellar/stellar-sdk/contract";
 export * as rpc from "@stellar/stellar-sdk/rpc";
+export declare const networks: {
+  readonly standalone: {
+    readonly networkPassphrase: "Standalone Network ; February 2017";
+    readonly contractId: "CAUAWQ63NVTJWD7UF5BVNWWQJDUFCAS4VBZLJLSMMJ2FQMBLLMLF6WEW";
+  };
+};
 export interface Client {
   /**
    * Construct and simulate a initialize transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
@@ -48,10 +54,12 @@ export interface Client {
     {
       product_type,
       token_quantity,
+      token_price,
       expiration_ledger,
     }: {
       product_type: string;
       token_quantity: i128;
+      token_price: i128;
       expiration_ledger: u32;
     },
     options?: {

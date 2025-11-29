@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Layout,
@@ -12,7 +15,7 @@ import { useWallet } from "../hooks/useWallet";
 import { networkPassphrase, rpcUrl } from "../contracts/util";
 
 // Contract ID and Network (Testnet)
-const CONTRACT_ID = "CDTZ6UJLJLATUXXZVFTMLBWT7U26KGG6TAPKN2Q3V6O476CKXSI27523";
+const CONTRACT_ID = "CBCLO4SPZ3IW6QUUGEDFSOVKGE2FEU74VXV6T62BRYE45PMYFDJL6RYR";
 const TREASURY_ADDRESS =
   "GAYAZERYFJDPIHQYS25BVN6XLUTZ6POUJKYGLB33ER25VFXLJZGYQFQ3";
 
@@ -24,10 +27,20 @@ const RealFlowPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Forms State
-  const [prodType, setProdType] = useState("");
+  // --- ÜRÜN LİSTESİ ---
+  const PRODUCTS = [
+    { symbol: "Cay", tokenPrice: 25 },
+    { symbol: "Findik", tokenPrice: 200 },
+    { symbol: "Misir", tokenPrice: 11 },
+  ];
+
+  const [prodType, setProdType] = useState(PRODUCTS[0].symbol);
   const [prodQuantity, setProdQuantity] = useState("");
-  const [prodExpiration, setProdExpiration] = useState("");
+  const [prodDate, setProdDate] = useState("");
+
+  // Seçilen ürünün fiyatını otomatik bul
+  const selectedProduct =
+    PRODUCTS.find((p) => p.symbol === prodType) || PRODUCTS[0];
 
   const [transferTo, setTransferTo] = useState("");
   const [transferAmount, setTransferAmount] = useState("");
@@ -47,16 +60,40 @@ const RealFlowPage: React.FC = () => {
     [address],
   );
 
+  // --- GÜVENLİ LEDGER ÇEKME ---
+  const getCurrentLedger = async () => {
+    try {
+      const response = await fetch(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "getLatestLedger",
+          params: [],
+        }),
+      });
+
+      if (!response.ok) throw new Error("Ağ hatası");
+      const data = await response.json();
+
+      if (!data.result || !data.result.sequence) return 900000;
+
+      return Number(data.result.sequence);
+    } catch (e) {
+      console.warn("Ledger çekilemedi, varsayılan kullanılıyor:", e);
+      return 900000;
+    }
+  };
+
   const fetchData = useCallback(async () => {
     try {
-      // Generated client methods return AssembledTransaction<T>
       const prodTx = await client.get_total_production();
       const supplyTx = await client.get_total_supply();
       const treasuryTx = await client.get_balance({
         address: TREASURY_ADDRESS,
       });
 
-      // simulate() zaten sonucu T tipine (burada bigint) çevirip dönüyor
       const prodSim = await prodTx.simulate();
       const supplySim = await supplyTx.simulate();
       const treasurySim = await treasuryTx.simulate();
@@ -77,16 +114,39 @@ const RealFlowPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [fetchData]);
 
+  // --- DÜZELTİLMİŞ KAYIT FONKSİYONU ---
   const handleRegisterProduction = async () => {
-    if (!address) return setError("Please connect wallet");
+    if (!address) return setError("Lütfen cüzdan bağlayın");
+    if (!prodDate) return setError("Lütfen bir tarih seçin");
+
+    if (!prodQuantity || Number(prodQuantity) <= 0)
+      return setError("Geçerli bir miktar girin");
+
     setLoading(true);
     setError(null);
     try {
+      const currentLedger = await getCurrentLedger();
+
+      const targetTime = new Date(prodDate).getTime();
+      const currentTime = new Date().getTime();
+      const diffSeconds = (targetTime - currentTime) / 1000;
+
+      if (diffSeconds < 0) throw new Error("Geçmiş tarih seçemezsiniz!");
+
+      const ledgersToAdd = Math.floor(diffSeconds / 5);
+      const finalExpirationLedger =
+        Number(currentLedger) + Number(ledgersToAdd);
+
+      console.log(
+        `Gönderiliyor -> Tür: ${prodType}, Miktar: ${prodQuantity}, Fiyat: ${selectedProduct.tokenPrice}, Ledger: ${finalExpirationLedger}`,
+      );
+
       const tx = await client.register_production(
         {
           product_type: prodType,
           token_quantity: BigInt(prodQuantity),
-          expiration_ledger: Number(prodExpiration),
+          token_price: BigInt(selectedProduct.tokenPrice),
+          expiration_ledger: finalExpirationLedger,
         },
         {
           fee: 10000,
@@ -101,15 +161,20 @@ const RealFlowPage: React.FC = () => {
       });
 
       await fetchData();
-      setProdType("");
+      setProdType(PRODUCTS[0].symbol);
       setProdQuantity("");
-      setProdExpiration("");
+      setProdDate("");
+      setError(null);
     } catch (err: unknown) {
-      console.error(err);
+      console.error("HATA DETAYI:", err);
       if (err instanceof Error) {
-        setError(err.message);
+        setError(
+          err.message.includes("InvalidInput")
+            ? "Veri Hatası: Lütfen tüm alanları (özellikle Fiyatı) sayı olarak girin."
+            : err.message,
+        );
       } else {
-        setError("Transaction failed");
+        setError("İşlem Başarısız oldu.");
       }
     } finally {
       setLoading(false);
@@ -262,11 +327,11 @@ const RealFlowPage: React.FC = () => {
     <Layout.Content>
       <Layout.Inset>
         <Text as="h1" size="xl">
-          RealFlow Economy Dashboard
+          FNDK Fındık Borsası
         </Text>
 
         {error && (
-          <Notification variant="error" title="Error">
+          <Notification variant="error" title="Hata">
             {error}
           </Notification>
         )}
@@ -283,7 +348,7 @@ const RealFlowPage: React.FC = () => {
             >
               <div>
                 <Text as="h3" size="lg">
-                  System Setup
+                  Sistem Kurulumu
                 </Text>
                 <Text
                   as="div"
@@ -298,8 +363,7 @@ const RealFlowPage: React.FC = () => {
                   {CONTRACT_ID}
                 </Text>
                 <Text as="p" size="sm">
-                  Initialize the contract if you see "UnreachableCodeReached"
-                  error. (Resets data)
+                  Sistemi başlatmak için tıklayın (Verileri sıfırlar!)
                 </Text>
               </div>
               <Button
@@ -311,7 +375,7 @@ const RealFlowPage: React.FC = () => {
                 disabled={loading || !address}
                 isLoading={loading}
               >
-                Initialize Contract
+                Sistemi Başlat (Initialize)
               </Button>
             </div>
           </Card>
@@ -328,7 +392,7 @@ const RealFlowPage: React.FC = () => {
           <Card>
             <div style={{ padding: "20px" }}>
               <Text as="h3" size="lg">
-                Total Production Value
+                Lisanslı Depo Rezervi (RWA)
               </Text>
               <Text
                 as="h1"
@@ -342,7 +406,7 @@ const RealFlowPage: React.FC = () => {
           <Card>
             <div style={{ padding: "20px" }}>
               <Text as="h3" size="lg">
-                Total Money Supply
+                Dolaşımdaki FNDK Token
               </Text>
               <Text as="h1" size="xl" style={{ color: "var(--pal-brand-40)" }}>
                 {totalSupply.toString()}
@@ -352,7 +416,7 @@ const RealFlowPage: React.FC = () => {
           <Card>
             <div style={{ padding: "20px" }}>
               <Text as="h3" size="lg">
-                Treasury Balance (Tax)
+                Güvence Fonu (Senyoraj)
               </Text>
               <Text
                 as="h1"
@@ -370,34 +434,67 @@ const RealFlowPage: React.FC = () => {
           <Card>
             <div style={{ padding: "20px" }}>
               <Text as="h3" size="lg" style={{ marginBottom: "20px" }}>
-                Register Production (Oracle)
+                Ürün Girişi & Tokenizasyon (Oracle)
               </Text>
               <div style={{ display: "grid", gap: "10px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.5rem",
+                  }}
+                >
+                  <label
+                    htmlFor="prod-type"
+                    style={{ fontSize: "0.875rem", fontWeight: 500 }}
+                  >
+                    Ürün Tipi (Sembol)
+                  </label>
+                  <select
+                    id="prod-type"
+                    value={prodType}
+                    onChange={(e) => setProdType(e.target.value)}
+                    style={{
+                      padding: "0.5rem",
+                      borderRadius: "0.25rem",
+                      color: "var(--pal-text-primary)",
+                    }}
+                  >
+                    {PRODUCTS.map((p) => (
+                      <option key={p.symbol} value={p.symbol}>
+                        {p.symbol}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <Input
                   fieldSize="md"
-                  id="prod-type"
-                  label="Product Type (Symbol)"
-                  value={prodType}
-                  onChange={(e) => setProdType(e.target.value)}
-                  placeholder="e.g. CORN"
+                  id="prod-price"
+                  label="Token Fiyatı (Sabit)"
+                  value={selectedProduct.tokenPrice.toString()}
+                  readOnly
+                  disabled
                 />
+
                 <Input
                   fieldSize="md"
                   id="prod-qty"
-                  label="Quantity"
+                  label="Token Miktarı"
                   type="number"
                   value={prodQuantity}
                   onChange={(e) => setProdQuantity(e.target.value)}
                 />
+
                 <Input
                   fieldSize="md"
-                  id="prod-exp"
-                  label="Expiration Ledger (Current + TTL)"
-                  type="number"
-                  value={prodExpiration}
-                  onChange={(e) => setProdExpiration(e.target.value)}
-                  placeholder="e.g. 100000"
+                  id="prod-date"
+                  label="Son Kullanma Tarihi (Vade)"
+                  type="date"
+                  value={prodDate}
+                  onChange={(e) => setProdDate(e.target.value)}
                 />
+
                 <Button
                   size="md"
                   variant="primary"
@@ -407,7 +504,7 @@ const RealFlowPage: React.FC = () => {
                   disabled={loading || !address}
                   isLoading={loading}
                 >
-                  Register Production
+                  Ürünü Kaydet (FNDK Bas)
                 </Button>
               </div>
             </div>
@@ -417,10 +514,10 @@ const RealFlowPage: React.FC = () => {
           <Card>
             <div style={{ padding: "20px" }}>
               <Text as="h3" size="lg" style={{ marginBottom: "20px" }}>
-                Monetary Policy
+                Para Politikası
               </Text>
               <Text as="p" size="md">
-                Check supply/demand gap and mint new tokens if needed.
+                Arz/Talep dengesini kontrol et ve gerekirse ek token bas.
               </Text>
               <Button
                 size="md"
@@ -432,7 +529,7 @@ const RealFlowPage: React.FC = () => {
                 isLoading={loading}
                 style={{ marginTop: "10px" }}
               >
-                Check & Mint (Seigniorage)
+                Kontrol Et & Bas (Senyoraj)
               </Button>
             </div>
           </Card>
@@ -441,20 +538,20 @@ const RealFlowPage: React.FC = () => {
           <Card>
             <div style={{ padding: "20px" }}>
               <Text as="h3" size="lg" style={{ marginBottom: "20px" }}>
-                Transfer with Tax
+                Vergili Transfer (Ticaret)
               </Text>
               <div style={{ display: "grid", gap: "10px" }}>
                 <Input
                   fieldSize="md"
                   id="trans-to"
-                  label="To Address"
+                  label="Alıcı Adresi"
                   value={transferTo}
                   onChange={(e) => setTransferTo(e.target.value)}
                 />
                 <Input
                   fieldSize="md"
                   id="trans-amt"
-                  label="Amount"
+                  label="Miktar"
                   type="number"
                   value={transferAmount}
                   onChange={(e) => setTransferAmount(e.target.value)}
@@ -462,11 +559,11 @@ const RealFlowPage: React.FC = () => {
                 <Input
                   fieldSize="md"
                   id="trans-tax"
-                  label="Tax Rate (%)"
+                  label="Vergi Oranı (%)"
                   type="number"
                   value={transferTaxRate}
                   onChange={(e) => setTransferTaxRate(e.target.value)}
-                  placeholder="e.g. 10 for 10%"
+                  placeholder="Örn: 10"
                 />
                 <Button
                   size="md"
@@ -477,7 +574,7 @@ const RealFlowPage: React.FC = () => {
                   disabled={loading || !address}
                   isLoading={loading}
                 >
-                  Send Transaction
+                  Transfer Et
                 </Button>
               </div>
             </div>
@@ -487,13 +584,13 @@ const RealFlowPage: React.FC = () => {
           <Card>
             <div style={{ padding: "20px" }}>
               <Text as="h3" size="lg" style={{ marginBottom: "20px" }}>
-                Burn Rotting Assets
+                Çürüyen Varlıkları Yak (Burn)
               </Text>
               <div style={{ display: "grid", gap: "10px" }}>
                 <Input
                   fieldSize="md"
                   id="burn-amt"
-                  label="Value Lost"
+                  label="Kaybedilen Değer"
                   type="number"
                   value={burnAmount}
                   onChange={(e) => setBurnAmount(e.target.value)}
@@ -507,7 +604,7 @@ const RealFlowPage: React.FC = () => {
                   disabled={loading || !address}
                   isLoading={loading}
                 >
-                  Burn Assets
+                  Varlıkları Yak
                 </Button>
               </div>
             </div>
