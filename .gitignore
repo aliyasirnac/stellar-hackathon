@@ -9,7 +9,6 @@ target
 test_snapshots
 
 # build output
-dist
 dist-ssr
 
 # dependencies
