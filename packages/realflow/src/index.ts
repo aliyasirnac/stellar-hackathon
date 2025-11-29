@@ -30,13 +30,6 @@ if (typeof window !== "undefined") {
   window.Buffer = window.Buffer || Buffer;
 }
 
-export const networks = {
-  standalone: {
-    networkPassphrase: "Standalone Network ; February 2017",
-    contractId: "CDZZJ76K5WSEFPBUFYG5WF5E5TNHHCC7CFNJM3FDEMLCMG6LZY4AONV2",
-  },
-} as const;
-
 export interface Client {
   /**
    * Construct and simulate a initialize transaction. Returns an `AssembledTransaction` object which will have a `result` field containing the result of the simulation. If this transaction changes contract state, you will need to call `signAndSend()` on the returned object.
@@ -70,13 +63,20 @@ export interface Client {
    * 2. ORACLE FONKSİYONU: Üretimi Sisteme Girer.
    * Burası "Mısır, 10 Ton, 100 Token" verisinin girildiği yerdir.
    * Sadece miktar değil, DEĞER (Fiyat * Miktar) hesaplar.
+   * MEM GÜNCELLEMESİ: expiration_ledger parametresi eklendi.
    */
   register_production: (
     {
       product_type,
       quantity,
       price_per_unit,
-    }: { product_type: string; quantity: i128; price_per_unit: i128 },
+      expiration_ledger,
+    }: {
+      product_type: string;
+      quantity: i128;
+      price_per_unit: i128;
+      expiration_ledger: u32;
+    },
     options?: {
       /**
        * The fee to pay for the transaction. Default: BASE_FEE
@@ -260,8 +260,9 @@ export class Client extends ContractClient {
         "AAAABQAAAAAAAAAAAAAAC01pbnRlZEV2ZW50AAAAAAEAAAAMbWludGVkX2V2ZW50AAAAAQAAAAAAAAAGYW1vdW50AAAAAAALAAAAAAAAAAI=",
         "AAAABQAAAAAAAAAAAAAAC0J1cm5lZEV2ZW50AAAAAAEAAAAMYnVybmVkX2V2ZW50AAAAAQAAAAAAAAAGYW1vdW50AAAAAAALAAAAAAAAAAI=",
         "AAAABQAAAAAAAAAAAAAAGFRyYW5zYWN0aW9uVmVsb2NpdHlFdmVudAAAAAEAAAAadHJhbnNhY3Rpb25fdmVsb2NpdHlfZXZlbnQAAAAAAAEAAAAAAAAABmFtb3VudAAAAAAACwAAAAAAAAAC",
+        "AAAABQAAAAAAAAAAAAAAE0hvdFRva2VuTWludGVkRXZlbnQAAAAAAQAAABZob3RfdG9rZW5fbWludGVkX2V2ZW50AAAAAAADAAAAAAAAAAxwcm9kdWN0X3R5cGUAAAARAAAAAAAAAAAAAAAGYW1vdW50AAAAAAALAAAAAAAAAAAAAAARZXhwaXJhdGlvbl9sZWRnZXIAAAAAAAAEAAAAAAAAAAI=",
         "AAAAAAAAAD4xLiBCQcWeTEFUTUE6IEhhemluZSB2ZSBEYcSfxLF0xLFtIEhhdnV6dSBhZHJlc2xlcmluaSBheWFybGFyLgAAAAAACmluaXRpYWxpemUAAAAAAAIAAAAAAAAACHRyZWFzdXJ5AAAAEwAAAAAAAAARZGlzdHJpYnV0aW9uX3Bvb2wAAAAAAAATAAAAAA==",
-        "AAAAAAAAAKgyLiBPUkFDTEUgRk9OS1PEsFlPTlU6IMOccmV0aW1pIFNpc3RlbWUgR2lyZXIuCkJ1cmFzxLEgIk3EsXPEsXIsIDEwIFRvbiwgMTAwIFRva2VuIiB2ZXJpc2luaW4gZ2lyaWxkacSfaSB5ZXJkaXIuClNhZGVjZSBtaWt0YXIgZGXEn2lsLCBERcSeRVIgKEZpeWF0ICogTWlrdGFyKSBoZXNhcGxhci4AAAATcmVnaXN0ZXJfcHJvZHVjdGlvbgAAAAADAAAAAAAAAAxwcm9kdWN0X3R5cGUAAAARAAAAAAAAAAhxdWFudGl0eQAAAAsAAAAAAAAADnByaWNlX3Blcl91bml0AAAAAAALAAAAAA==",
+        "AAAAAAAAAOMyLiBPUkFDTEUgRk9OS1PEsFlPTlU6IMOccmV0aW1pIFNpc3RlbWUgR2lyZXIuCkJ1cmFzxLEgIk3EsXPEsXIsIDEwIFRvbiwgMTAwIFRva2VuIiB2ZXJpc2luaW4gZ2lyaWxkacSfaSB5ZXJkaXIuClNhZGVjZSBtaWt0YXIgZGXEn2lsLCBERcSeRVIgKEZpeWF0ICogTWlrdGFyKSBoZXNhcGxhci4KTUVNIEfDnE5DRUxMRU1FU8SwOiBleHBpcmF0aW9uX2xlZGdlciBwYXJhbWV0cmVzaSBla2xlbmRpLgAAAAATcmVnaXN0ZXJfcHJvZHVjdGlvbgAAAAAEAAAAAAAAAAxwcm9kdWN0X3R5cGUAAAARAAAAAAAAAAhxdWFudGl0eQAAAAsAAAAAAAAADnByaWNlX3Blcl91bml0AAAAAAALAAAAAAAAABFleHBpcmF0aW9uX2xlZGdlcgAAAAAAAAQAAAAA",
         "AAAAAAAAAGgzLiBZRU7EsCBQQVJBIERFTktMRU3EsCAoQ09SRSBMT0dJQykKQXJ6ID4gVGFsZXAgaXNlIFBhcmEgQmFzIChTZW55b3JhaikuCkJ1IGZvbmtzaXlvbiAiRGVuZ2VsZXlpY2kiZGlyLgAAAA5jaGVja19hbmRfbWludAAAAAAAAAAAAAEAAAAL",
         "AAAAAAAAALs0LiBLQU9TIFnDlk5FVMSwTcSwOiAiw4fDvHLDvG1lIC8gU3RvayDEsG1oYSIKRcSfZXIgZG9tYXRlcyBzYXTEsWxhbWF6IHZlIMOnw7xyw7xyc2UsIHBpeWFzYWRha2kga2FyxZ/EsWzEscSfxLEgb2xtYXlhbiBwYXJhecSxIHlha2FyLgpCdSBmb25rc2l5b24gIkRlZmxhc3lvbi9FbmZsYXN5b24gRGVuZ2VsZXlpY2lzaSJkaXIuAAAAABNidXJuX3JvdHRpbmdfYXNzZXRzAAAAAAEAAAAAAAAACnZhbHVlX2xvc3QAAAAAAAsAAAAA",
         "AAAAAAAAAJA1LiBQQVJBTklOIEhJWkk6IFZlcmdpbGVuZGlyaWxtacWfIFRyYW5zZmVyCk1FTTogIlBhcmEgZMO2bmTDvGvDp2UgZGV2bGV0IGthemFuxLFyLiIKTm9ybWFsIHRyYW5zZmVyIHllcmluZSBidSBrdWxsYW7EsWzEsXIuICUxMCBrb21pc3lvbiBrZXNlci4AAAARdHJhbnNmZXJfd2l0aF90YXgAAAAAAAAEAAAAAAAAAARmcm9tAAAAEwAAAAAAAAACdG8AAAAAABMAAAAAAAAABmFtb3VudAAAAAAACwAAAAAAAAADdGF4AAAAAAsAAAAA",

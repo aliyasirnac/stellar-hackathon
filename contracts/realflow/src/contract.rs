@@ -35,6 +35,14 @@ pub struct TransactionVelocityEvent {
     pub amount: i128,
 }
 
+#[contractevent]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct HotTokenMintedEvent {
+    pub product_type: Symbol,
+    pub amount: i128,
+    pub expiration_ledger: u32,
+}
+
 #[contractimpl]
 impl RealFlowContract {
     /// 1. BAŞLATMA: Hazine ve Dağıtım Havuzu adreslerini ayarlar.
@@ -52,11 +60,13 @@ impl RealFlowContract {
     /// 2. ORACLE FONKSİYONU: Üretimi Sisteme Girer.
     /// Burası "Mısır, 10 Ton, 100 Token" verisinin girildiği yerdir.
     /// Sadece miktar değil, DEĞER (Fiyat * Miktar) hesaplar.
+    /// MEM GÜNCELLEMESİ: expiration_ledger parametresi eklendi.
     pub fn register_production(
         env: Env,
         product_type: Symbol,
         quantity: i128,
         price_per_unit: i128,
+        expiration_ledger: u32,
     ) {
         // Ekonomik Değeri Hesapla (10 Ton * 100 Birim Fiyat = 1000 Birim Değer)
         let production_value = quantity * price_per_unit;
@@ -75,10 +85,27 @@ impl RealFlowContract {
 
         // Frontend için Event fırlat (Grafikte Arzın arttığını göstermek için)
         ProductionAddedEvent {
-            product_type,
+            product_type: product_type.clone(),
             value: production_value,
         }
         .publish(&env);
+
+        // MEM: Hot Token Kontrolü
+        // Eğer ürünün ömrü kısaysa (örneğin şu anki ledger'dan 1 gün (17280 ledger) sonrasından azsa)
+        // Bu bir "Hot Token" durumudur.
+        let current_ledger = env.ledger().sequence();
+        // Basitlik için 17280 ledger (yaklaşık 1 gün) eşik değeri olarak alındı.
+        // Gerçek hayatta bu parametrik olabilir.
+        let threshold = 17280;
+
+        if expiration_ledger > current_ledger && (expiration_ledger - current_ledger) < threshold {
+            HotTokenMintedEvent {
+                product_type,
+                amount: production_value,
+                expiration_ledger,
+            }
+            .publish(&env);
+        }
     }
 
     /// 3. YENİ PARA DENKLEMİ (CORE LOGIC)

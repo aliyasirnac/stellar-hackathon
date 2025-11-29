@@ -3,6 +3,7 @@ import "./App.module.css";
 import ConnectAccount from "./components/ConnectAccount.tsx";
 import { Routes, Route, Outlet, NavLink } from "react-router-dom";
 import Home from "./pages/Home";
+import RealFlowPage from "./pages/RealFlow";
 import Debugger from "./pages/Debugger.tsx";
 
 const AppLayout: React.FC = () => (
@@ -13,6 +14,25 @@ const AppLayout: React.FC = () => (
       contentRight={
         <>
           <nav>
+            <NavLink
+              to="/realflow"
+              style={{
+                textDecoration: "none",
+                marginRight: "10px",
+              }}
+            >
+              {({ isActive }) => (
+                <Button
+                  variant="tertiary"
+                  size="md"
+                  onClick={() => (window.location.href = "/realflow")}
+                  disabled={isActive}
+                >
+                  <Icon.Activity size="md" />
+                  RealFlow
+                </Button>
+              )}
+            </NavLink>
             <NavLink
               to="/debug"
               style={{
@@ -58,6 +78,7 @@ function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route path="/" element={<Home />} />
+        <Route path="/realflow" element={<RealFlowPage />} />
         <Route path="/debug" element={<Debugger />} />
         <Route path="/debug/:contractName" element={<Debugger />} />
       </Route>
