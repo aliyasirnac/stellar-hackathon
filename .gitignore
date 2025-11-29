@@ -39,6 +39,7 @@ lerna-debug.log*
 packages/*
 # if you have other workspace packages, add them here
 !packages/.gitkeep
+!packages/realflow
 
 # generated contract client imports
 src/contracts/*
