@@ -2,9 +2,7 @@ import { Button, Icon, Layout } from "@stellar/design-system";
 import "./App.module.css";
 import ConnectAccount from "./components/ConnectAccount.tsx";
 import { Routes, Route, Outlet, NavLink } from "react-router-dom";
-import Home from "./pages/Home";
 import RealFlowPage from "./pages/RealFlow";
-import Debugger from "./pages/Debugger.tsx";
 
 const AppLayout: React.FC = () => (
   <main>
@@ -30,24 +28,6 @@ const AppLayout: React.FC = () => (
                 >
                   <Icon.Activity size="md" />
                   RealFlow
-                </Button>
-              )}
-            </NavLink>
-            <NavLink
-              to="/debug"
-              style={{
-                textDecoration: "none",
-              }}
-            >
-              {({ isActive }) => (
-                <Button
-                  variant="tertiary"
-                  size="md"
-                  onClick={() => (window.location.href = "/debug")}
-                  disabled={isActive}
-                >
-                  <Icon.Code02 size="md" />
-                  Debugger
                 </Button>
               )}
             </NavLink>
@@ -77,10 +57,7 @@ function App() {
   return (
     <Routes>
       <Route element={<AppLayout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/realflow" element={<RealFlowPage />} />
-        <Route path="/debug" element={<Debugger />} />
-        <Route path="/debug/:contractName" element={<Debugger />} />
+        <Route path="/" element={<RealFlowPage />} />
       </Route>
     </Routes>
   );

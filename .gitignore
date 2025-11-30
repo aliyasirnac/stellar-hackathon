@@ -10,7 +10,7 @@ test_snapshots
 
 # build output
 dist-ssr
-
+dist
 # dependencies
 node_modules/
 
