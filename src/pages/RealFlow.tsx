@@ -327,7 +327,7 @@ const RealFlowPage: React.FC = () => {
     <Layout.Content>
       <Layout.Inset>
         <Text as="h1" size="xl">
-          FNDK Fındık Borsası
+          NutToken - Realflow: Yönetim Paneli
         </Text>
 
         {error && (
@@ -392,7 +392,7 @@ const RealFlowPage: React.FC = () => {
           <Card>
             <div style={{ padding: "20px" }}>
               <Text as="h3" size="lg">
-                Lisanslı Depo Rezervi (RWA)
+                Toplam Ürün Kaydı
               </Text>
               <Text
                 as="h1"
@@ -406,7 +406,7 @@ const RealFlowPage: React.FC = () => {
           <Card>
             <div style={{ padding: "20px" }}>
               <Text as="h3" size="lg">
-                Dolaşımdaki FNDK Token
+                Toplam Arz
               </Text>
               <Text as="h1" size="xl" style={{ color: "var(--pal-brand-40)" }}>
                 {totalSupply.toString()}
@@ -416,7 +416,7 @@ const RealFlowPage: React.FC = () => {
           <Card>
             <div style={{ padding: "20px" }}>
               <Text as="h3" size="lg">
-                Güvence Fonu (Senyoraj)
+                Hazine Bakiyesi
               </Text>
               <Text
                 as="h1"
@@ -538,7 +538,7 @@ const RealFlowPage: React.FC = () => {
           <Card>
             <div style={{ padding: "20px" }}>
               <Text as="h3" size="lg" style={{ marginBottom: "20px" }}>
-                Vergili Transfer (Ticaret)
+                Başka Adrese Transfer & Vergi Uygula
               </Text>
               <div style={{ display: "grid", gap: "10px" }}>
                 <Input
