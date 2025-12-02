@@ -1,5 +1,8 @@
 # NutToken 🌰
 
+### The National Economic Model Book
+[Book PDF Link](https://milliekonomimodeli.com/static/Milli-Ekonomi-Modeli-Sosyal-Devlet-Milli-Devlet.pdf)
+
 ### RWA Tokenization & Algorithmic Seigniorage Protocol on Stellar
 
 **NutToken** is a DeFi solution built on **Stellar Soroban** that digitizes the **Hazelnut** economy. By leveraging the **National Economy Model (MEM)**, we turn real-world agricultural production into instant liquidity, solving the chronic cash-flow problems of farmers in Turkey (who control 70% of global production).
